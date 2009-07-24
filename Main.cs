@@ -235,9 +235,13 @@ namespace xrffutils
 				}
 				else if (xi.NodeType == XmlNodeType.EndElement)
 				{
-					xo.WriteEndElement();
-					if (xi.Name == "header")
+					if (xi.Name == "attributes")
 					{
+						xo.WriteEndElement();
+					}
+					else if (xi.Name == "header")
+					{
+						xo.WriteEndElement();
 						break;
 					}
 				}
