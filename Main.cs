@@ -190,6 +190,23 @@ namespace xrffutils
 			}
 			return ul.ToArray();
 		}
+		
+		public static T GetActualValue<T>(this Pair<T, T>[] strl, T val)
+		{
+			foreach (Pair<T, T> x in strl)
+			{
+				if (x.second.Equals(val))
+				{
+					return x.first;
+				}
+			}
+			return val;
+		}
+	}
+	
+	static class globvars
+	{
+		static public Pair<string, string>[] labels;
 	}
 	
 	class Pair<T, U>
@@ -286,7 +303,7 @@ namespace xrffutils
 		{
 			if (names[0] == "class")
 			{
-				return values.decodeString();
+				return globvars.labels.GetActualValue(values.decodeString());
 			}
 			else
 			{
@@ -551,6 +568,7 @@ namespace xrffutils
 			{
 				featureIdx[i] = new opgroup(features[i]);
 			}
+			globvars.labels = labels;
 			SetMatchAttrFile(inputFile, featureIdx);
 			FileStream fso = new FileStream(outputFile, FileMode.Create, FileAccess.Write);
 			StreamWriter tfso = new StreamWriter(fso);
@@ -743,6 +761,27 @@ namespace xrffutils
 			Console.WriteLine("error while validating: "+e.Message);
 		}
 		
+		public static string[] listlabelsxrff(string inputFile)
+		{
+			List<string> labelsl = new List<string>();
+			FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+			XmlTextReader xi = new XmlTextReader(fs);
+			while (xi.Read())
+			{
+				if (xi.IsStartElement() && xi.Name == "label")
+				{
+					while (xi.Value == string.Empty)
+					{
+						xi.Read();
+					}
+					labelsl.Add(xi.Value);
+				}
+			}
+			xi.Close();
+			fs.Close();
+			return labelsl.ToArray();
+		}
+		
 		public static void Main(string[] args)
 		{
 			if (args.Length < 1)
@@ -818,6 +857,19 @@ namespace xrffutils
 				string[] curfeatures = listfeatures(args[1]);
 				orderfeatures(curfeatures, args[2]);
 				foreach (string x in curfeatures)
+				{
+					Console.WriteLine(x);
+				}
+			}
+			else if (args[0] == "listlabelsxrff")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				string[] alllabels = listlabelsxrff(args[1]);
+				foreach (string x in alllabels)
 				{
 					Console.WriteLine(x);
 				}
