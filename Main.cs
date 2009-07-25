@@ -34,7 +34,7 @@ namespace xrffutils
 {
 	static class extensions
 	{
-		public static bool Contains<T>(this T[] strl, T item)
+		public static bool Contains<T>(this IEnumerable<T> strl, T item)
 		{
 			foreach (T x in strl)
 			{
@@ -43,17 +43,182 @@ namespace xrffutils
 			}
 			return false;
 		}
-		public static int IndexOf<T>(this T[] strl, T item)
+		
+		public static bool Contains(this IEnumerable<opgroup> strl, int item)
 		{
-			int i;
-			for (i = 0; i < strl.Length; ++i)
+			foreach (opgroup x in strl)
 			{
-				if (strl[i].Equals(item))
+				if (x.Contains(item))
+					return true;
+			}
+			return false;
+		}
+		
+		public static int IndexOf<T>(this IEnumerable<T> strl, T item)
+		{
+			int i = 0;
+			foreach (T x in strl)
+			{
+				if (x.Equals(item))
 					return i;
+				++i;
 			}
 			return -1;
 		}
+		
+		public static string Join(this IEnumerable<string> strl, char sep)
+		{
+			string total = "";
+			int i = 0;
+			foreach (string x in strl)
+			{
+				if (i != 0)
+					total += sep;
+				total += x;
+				++i;
+			}
+			return total;
+		}
+		
+		public static float Sum(this IEnumerable<float> strl)
+		{
+			float total = 0.0f;
+			foreach (float x in strl)
+			{
+				total += x;
+			}
+			return total;
+		}
+		
+		public static float Average(this float[] strl)
+		{
+			return Sum(strl) / strl.Length;
+		}
+		
+		public static float AbsSubtract(this float[] strl)
+		{
+			return Math.Abs(strl[0] - strl[1]);
+		}
+		
+		public static void SetValAtIdx(this IEnumerable<opgroup> strl, int idx, string val)
+		{
+			foreach (opgroup x in strl)
+			{
+				if (x.Contains(idx))
+				{
+					x.SetValAtIdx(idx, val);
+				}
+			}
+		}
 	}
+	
+	class opgroup
+	{
+		public char op;
+		public string[] names;
+		public int[] idxs;
+		public float[] values;
+		
+		public opgroup(string input)
+		{
+			if (input[0] == 'S')
+			{
+				op = 'S';
+				input.Remove(0);
+			}
+			else
+				op = 'I';
+			names = input.Split('N');
+			idxs = new int[names.Length];
+			if (input == "class")
+				values = new float[20];
+			else
+				values = new float[names.Length];
+		}
+		
+		public bool Contains(int item)
+		{
+			return idxs.Contains(item);
+		}
+		
+		public bool Contains(string item)
+		{
+			return names.Contains(item);
+		}
+		
+		public void Set(int item)
+		{
+			idxs[0] = item;
+		}
+		
+		public override string ToString()
+		{
+			return op+names.Join('N');
+		}
+		
+		public void encodeString(string str, float[] arr)
+		{
+			string cmap = " abcdefghijklmnopqrstuvwxyz";
+			for (int i = 0; i < str.Length; ++i)
+			{
+				arr[i] = cmap.IndexOf(str[i]);
+			}
+			for (int i = str.Length; i < arr.Length; ++i)
+			{
+				arr[i] = 0;
+			}
+		}
+		
+		public string decodeString(float[] arr)
+		{
+			string outmsg = "";
+			string cmap = " abcdefghijklmnopqrstuvwxyz";
+			for (int i = 0; i < arr.Length; ++i)
+			{
+				if (arr[i] == 0 || arr[i] >= arr.Length)
+					break;
+				outmsg += cmap[(int)arr[i]];
+			}
+			return outmsg;
+		}
+		
+		public string GetVal()
+		{
+			if (names[0] == "class")
+			{
+				return decodeString(values);
+			}
+			else
+			{
+				if (op == 'I')
+					return values[0].ToString();
+				else
+					return values.AbsSubtract().ToString();
+			}
+		}
+		
+		public void SetValAtIdx(int idx, float val)
+		{
+			int i;
+			for (i = 0; i < idxs.Length; ++i)
+			{
+				if (idxs[i] == idx)
+					break;
+			}
+			values[i] = val;
+		}
+		
+		public void SetValAtIdx(int idx, string val)
+		{
+			if (names[0] == "class")
+			{
+				encodeString(val, values);
+			}
+			else
+				SetValAtIdx(idx, System.Convert.ToSingle(val));
+		}
+	}
+	
 	class MainClass
 	{
 		public static void mkarff(string xrffFile, string arffFile)
@@ -171,6 +336,54 @@ namespace xrffutils
 			return features.ToArray();
 		}
 		
+		public static void orderfeatures(string[] features, string inputFile)
+		{
+			FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+			XmlTextReader xi = new XmlTextReader(fs);
+			List<string> ofeatures = new List<string>();
+			while (xi.Read())
+			{
+				if (xi.IsStartElement())
+				{
+					if (xi.Name == "attribute")
+					{
+						string attrname = xi.GetAttribute("name");
+						if (attrname != null)
+						{
+							if (features.Contains(attrname))
+							{
+								if (!ofeatures.Contains(attrname))
+								{
+									ofeatures.Add(attrname);
+								}
+							}
+						}
+					}
+				}
+				else if (xi.NodeType == XmlNodeType.EndElement)
+				{
+					if (xi.Name == "attributes")
+					{
+						break;
+					}
+				}
+			}
+			foreach (string x in features)
+			{
+				if (!ofeatures.Contains(x))
+					ofeatures.Add(x);
+			}
+			for (int i = 0; i < ofeatures.Count; ++i)
+			{
+				features[i] = ofeatures[i];
+			}
+			ofeatures = null;
+			xi.Close();
+			xi = null;
+			fs.Close();
+			fs = null;
+		}
+		
 		public static void selectfeatures(string featureFile, string inputFile, string outputFile)
 		{
 			selectfeatures(listfeatures(featureFile), inputFile, outputFile);
@@ -187,7 +400,12 @@ namespace xrffutils
 			xo.Indentation = 1;
 			xo.IndentChar = '\t';
 			xo.Formatting = Formatting.Indented;
-			int[] featureIdx = new int[features.Length];
+			orderfeatures(features, inputFile);
+			opgroup[] featureIdx = new opgroup[features.Length];
+			for (int i = 0; i < features.Length; ++i)
+			{
+				featureIdx[i] = new opgroup(features[i]);
+			}
 			int curidx = 0;
 			while (xi.Read())
 			{
@@ -226,11 +444,26 @@ namespace xrffutils
 						{
 							if (features.Contains(attrname))
 							{
-								featureIdx[features.IndexOf(attrname)] = curidx;
+								featureIdx[features.IndexOf(attrname)].Set(curidx);
+								xo.WriteStartElement(xi.Name);
+								while (xi.MoveToNextAttribute())
+								{
+									xo.WriteStartAttribute(xi.Name);
+									if (xi.Name == "name")
+										xo.WriteString(featureIdx[features.IndexOf(attrname)].ToString());
+									else
+										xo.WriteString(xi.Value);
+									xo.WriteEndAttribute();
+								}
+								xo.WriteEndElement();
 								xo.WriteNode(xi, true);
 							}
 							++curidx;
 						}
+					}
+					else
+					{
+						xo.WriteNode(xi, true);
 					}
 				}
 				else if (xi.NodeType == XmlNodeType.EndElement)
@@ -269,13 +502,35 @@ namespace xrffutils
 					}
 					else if (xi.NodeType == XmlNodeType.EndElement)
 					{
+						foreach (opgroup x in featureIdx)
+						{
+							xo.WriteElementString("value", x.GetVal());
+						}
 						xo.WriteEndElement();
 					}
 				}
 				else if (xi.Name == "value" && xi.IsStartElement())
 				{
-					if (featureIdx.Contains(vcount))
-						xo.WriteNode(xi, true);
+//					Console.WriteLine(xi.NodeType);
+//					Console.WriteLine(xi.Value);
+					xi.Read();
+//					Console.WriteLine(xi.NodeType);
+					Console.WriteLine(xi.Value);
+//					if (xi.N)
+					featureIdx.SetValAtIdx(vcount, xi.Value);
+					
+//					if (featureIdx.Contains(vcount))
+//					{
+//						Console.WriteLine(xi.);
+//						featureIdx.SetValAtIdx(vcount, System.Convert.ToSingle(xi.Value));
+//						xo.WriteNode(xi, true);
+//					}
+//					++vcount;
+				}
+				else if (xi.Name == "value" && xi.NodeType == XmlNodeType.EndElement)
+				{
+//					Console.WriteLine(xi.NodeType);
+//					Console.WriteLine(xi.Value);
 					++vcount;
 				}
 			}
@@ -431,6 +686,20 @@ namespace xrffutils
 					return;
 				}
 				validate(args[1]);
+			}
+			else if (args[0] == "orderfeatures")
+			{
+				if (args.Length < 3)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				string[] curfeatures = listfeatures(args[1]);
+				orderfeatures(curfeatures, args[2]);
+				foreach (string x in curfeatures)
+				{
+					Console.WriteLine(x);
+				}
 			}
 			else
 			{
