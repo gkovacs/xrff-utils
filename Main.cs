@@ -290,6 +290,16 @@ namespace xrffutils
 			return System.Convert.ToSingle(str);
 		}
 		
+		public static new string mkstring(this Pair<string, string> str)
+		{
+			return "("+str.first+","+str.second+")";
+		}
+		
+		public static new string mkstring(this Triple<string, string, string> str)
+		{
+			return "("+str.first+","+str.second+","+str.third+")";
+		}
+		
 		public static T[] GetUnique<T>(this Pair<T, T>[] strl)
 		{
 			List<T> ul = new List<T>();
@@ -317,6 +327,8 @@ namespace xrffutils
 		
 		public static bool CompareMid(this string str, string s, int startpos1, int startpos2, int num)
 		{
+			if (num <= 0)
+				return false;
 			for (int i = 0; i < num; ++i)
 			{
 				if (str[startpos1+i] != s[startpos2+i])
@@ -368,6 +380,46 @@ namespace xrffutils
 		public static string GetUntilEnd(this string str, int startpos)
 		{
 			return str.GetMid(startpos, str.Length);
+		}
+		
+		public static bool CompareStartNthIndexOf(this string str, string s, char c, int idx)
+		{
+			return str.CompareStart(s, str.NthIndexOf(c, idx));
+		}
+		
+		public static bool CompareStartNthIndexOf(this string str, string s, string c, int idx)
+		{
+			return str.CompareStart(s, str.NthIndexOf(c, idx));
+		}
+		
+		public static bool CompareStartNthIndexFromLast(this string str, string s, char c, int idx)
+		{
+			return str.CompareStart(s, str.NthIndexFromLast(c, idx));
+		}
+		
+		public static bool CompareStartNthIndexFromLast(this string str, string s, string c, int idx)
+		{
+			return str.CompareStart(s, str.NthIndexFromLast(c, idx));
+		}
+		
+		public static bool CompareEndNthIndexOf(this string str, string s, char c, int idx)
+		{
+			return str.CompareEnd(s, str.NthIndexOf(c, idx));
+		}
+		
+		public static bool CompareEndNthIndexOf(this string str, string s, string c, int idx)
+		{
+			return str.CompareEnd(s, str.NthIndexOf(c, idx));
+		}
+		
+		public static bool CompareEndNthIndexFromLast(this string str, string s, char c, int idx)
+		{
+			return str.CompareEnd(s, str.NthIndexFromLast(c, idx));
+		}
+		
+		public static bool CompareEndNthIndexFromLast(this string str, string s, string c, int idx)
+		{
+			return str.CompareEnd(s, str.NthIndexFromLast(c, idx));
 		}
 		
 		public static int NthIndexOf(this string str, char s, int idx)
@@ -464,90 +516,105 @@ namespace xrffutils
 		}
 	}
 	
-	class comboGenerator2D : comboGenerator
+	class Triple<T, U, V>
 	{
-		public int i2;
-		public int j2;
+		public T first;
+		public U second;
+		public V third;
+		public Triple()
+		{
+			
+		}
+		public Triple(T f, U s, V t)
+		{
+			first = f;
+			second = s;
+			third = t;
+		}
+	}
+	
+	class TripleGenerator : PairGenerator
+	{
+		public int k;
 		public override bool SatisfiesConstraints()
 		{
-			if (i1 > j1)
+			if (i >= j)
 				return false;
-			if (j1 > i2)
+			if (j >= k)
 				return false;
-			if (i2 > j2)
+			if (!l[i].CompareStartNthIndexFromLast(l[j], '_', 0))
 				return false;
-			if (!l[i1].CompareEnd(l[j1], 2) || !l[i1].CompareEnd(l[j2], 2) || !l[i1].CompareEnd(l[i2], 2))
+			if (!l[i].CompareStartNthIndexFromLast(l[k], '_', 0))
 				return false;
-			if (!l[i1].CompareEnd("_x") && !l[i1].CompareEnd("_y") && !l[i1].CompareEnd("_z"))
-				return false;
+//			if (!l[i1].CompareEnd(l[j1], 2) || !l[i1].CompareEnd(l[j2], 2) || !l[i1].CompareEnd(l[i2], 2))
+//				return false;
+//			if (!l[i1].CompareMidNthIndexFromLast(l[j1], '_', 0, 1) || 
+//			    !l[i1].CompareMidNthIndexFromLast(l[j2], '_', 0, 1) || 
+//			    !l[i1].CompareMidNthIndexFromLast(l[i2], '_', 0, 1))
+//				return false;
+//			if (!l[i1].CompareEnd("_x") && !l[i1].CompareEnd("_y") && !l[i1].CompareEnd("_z"))
+//				return false;
 			return true;
 		}
-		public override string GetNext()
+		public new Triple<string, string, string> GetNext()
 		{
-			if (++j2 >= l.Length)
+			start:
+			if (++k >= l.Length)
 			{
-				if (++i2 >= l.Length)
+				if (++j >= l.Length)
 				{
-					if (++j1 >= l.Length)
+					if (++i >= l.Length)
 					{
-						if (++i1 >= l.Length)
-						{
-							return null;
-						}
-						else
-						{
-							j1 = 0;
-						}
+						return null;
 					}
 					else
 					{
-						i2 = 0;
+						j = 0;
 					}
 				}
 				else
 				{
-					j2 = 0;
+					k = 0;
 				}
 			}
 			if (SatisfiesConstraints())
-				return "("+l[i1]+","+l[j1]+","+l[i2]+","+l[j2]+")";
+				return new Triple<string, string, string>(l[i], l[j], l[k]);
 			else
-				return GetNext();
+				goto start;
 		}
 	}
 	
-	class comboGenerator
+	class PairGenerator
 	{
 		public string[] l;
-		public int i1;
-		public int j1;
+		public int i;
+		public int j;
 		public virtual bool SatisfiesConstraints()
 		{
-			if (i1 > j1)
+			if (i >= j)
 				return false;
-			if (!l[i1].CompareEnd(l[j1], 2))
-				return false;
-			if (!l[i1].CompareEnd("_x") && !l[i1].CompareEnd("_y") && !l[i1].CompareEnd("_z"))
+			if (!l[i].CompareStartNthIndexFromLast(l[j], '_', 0))
 				return false;
 			return true;
 		}
-		public virtual string GetNext()
+		public Pair<string, string> GetNext()
 		{
-			if (++j1 >= l.Length)
+			start:
+			if (++j >= l.Length)
 			{
-				if (++i1 >= l.Length)
+				if (++i >= l.Length)
 				{
 					return null;
 				}
 				else
 				{
-					j1 = 0;
+					j = 0;
 				}
 			}
 			if (SatisfiesConstraints())
-				return "("+l[i1]+","+l[j1]+")";
+				return new Pair<string, string>(l[i], l[j]);
 			else
-				return GetNext();
+				goto start;
 		}
 	}
 	
@@ -1155,7 +1222,7 @@ namespace xrffutils
 			return labelsl.ToArray();
 		}
 		
-		public static void combogen(string inputFile)
+		public static void pairgen(string inputFile)
 		{
 			FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
 			StreamReader ao = new StreamReader(fs);
@@ -1170,17 +1237,17 @@ namespace xrffutils
 			fs.Close();
 			ao = null;
 			fs = null;
-			comboGenerator cbg = new comboGenerator();
+			PairGenerator cbg = new PairGenerator();
 			cbg.l = features.ToArray();
 			features = null;
-			string s;
+			Pair<string, string> s = null;
 			while ((s = cbg.GetNext()) != null)
 			{
-				Console.WriteLine(s);
+				Console.WriteLine(s.mkstring());
 			}
 		}
 		
-		public static void combogen2D(string inputFile)
+		public static void triplegen(string inputFile)
 		{
 			FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
 			StreamReader ao = new StreamReader(fs);
@@ -1195,13 +1262,13 @@ namespace xrffutils
 			fs.Close();
 			ao = null;
 			fs = null;
-			comboGenerator2D cbg = new comboGenerator2D();
+			TripleGenerator cbg = new TripleGenerator();
 			cbg.l = features.ToArray();
 			features = null;
-			string s;
+			Triple<string, string, string> s = null;
 			while ((s = cbg.GetNext()) != null)
 			{
-				Console.WriteLine(s);
+				Console.WriteLine(s.mkstring());
 			}
 		}
 		
@@ -1297,23 +1364,23 @@ namespace xrffutils
 					Console.WriteLine(x);
 				}
 			}
-			else if (args[0] == "combogen")
+			else if (args[0] == "pairgen")
 			{
 				if (args.Length < 2)
 				{
 					Console.WriteLine("not enough arguments for "+args[0]);
 					return;
 				}
-				combogen(args[1]);
+				pairgen(args[1]);
 			}
-			else if (args[0] == "combogen2D")
+			else if (args[0] == "triplegen")
 			{
 				if (args.Length < 2)
 				{
 					Console.WriteLine("not enough arguments for "+args[0]);
 					return;
 				}
-				combogen2D(args[1]);
+				triplegen(args[1]);
 			}
 			else
 			{
