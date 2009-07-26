@@ -314,6 +314,134 @@ namespace xrffutils
 			}
 			return val;
 		}
+		
+		public static bool CompareMid(this string str, string s, int startpos1, int startpos2, int num)
+		{
+			for (int i = 0; i < num; ++i)
+			{
+				if (str[startpos1+i] != s[startpos2+i])
+					return false;
+			}
+			return true;
+		}
+		
+		public static bool CompareEnd(this string str, string s, int num)
+		{
+			return str.CompareMid(s, str.Length-num, s.Length-num, num);
+		}
+		
+		public static bool CompareEnd(this string str, string s)
+		{
+			return str.CompareEnd(s, s.Length);
+		}
+		
+		public static bool CompareStart(this string str, string s, int num)
+		{
+			return str.CompareMid(s, 0, 0, num);
+		}
+		
+		public static bool CompareStart(this string str, string s)
+		{
+			return str.CompareStart(s, s.Length);
+		}
+		
+		public static string GetFirst(this string str, int num)
+		{
+			return str.GetMid(0, num);
+		}
+		
+		public static string GetLast(this string str, int num)
+		{
+			return str.GetMid(str.Length-num, num);
+		}
+		
+		public static string GetMid(this string str, int startpos, int num)
+		{
+			string outmsg = "";
+			for (int i = startpos; i < startpos+num; ++i)
+			{
+				outmsg += str[i];
+			}
+			return outmsg;
+		}
+		
+		public static string GetUntilEnd(this string str, int startpos)
+		{
+			return str.GetMid(startpos, str.Length);
+		}
+		
+		public static int NthIndexOf(this string str, char s, int idx)
+		{
+			int i;
+			for (i = 0; i < str.Length; ++i)
+			{
+				if (str[i] == s)
+				{
+					if (--idx == -1)
+						break;
+				}
+			}
+			if (idx == -1)
+				return i;
+			else
+				return -1;
+		}
+		
+		public static int NthIndexOf(this string str, string s, int idx)
+		{
+			int i;
+			for (i = 0; i < str.Length+1-s.Length; ++i)
+			{
+				if (str.GetMid(i, s.Length) == s)
+				{
+					if (--idx == -1)
+						break;
+					else
+						i += s.Length-1;
+				}
+			}
+			if (idx == -1)
+				return i;
+			else
+				return -1;
+		}
+		
+		public static int NthIndexFromLast(this string str, string s, int idx)
+		{
+			return str.NthIndexOf(s, str.Count(s)-1-idx);
+		}
+		
+		public static int NthIndexFromLast(this string str, char s, int idx)
+		{
+			return str.NthIndexOf(s, str.Count(s)-1-idx);
+		}
+		
+		public static int Count(this string str, string s)
+		{
+			int num = 0;
+			for (int i = 0; i < str.Length+1-s.Length; ++i)
+			{
+				if (str.GetMid(i, s.Length) == s)
+				{
+					++num;
+					i += s.Length-1;
+				}
+			}
+			return num;
+		}
+		
+		public static int Count(this string str, char s)
+		{
+			int num = 0;
+			for (int i = 0; i < str.Length; ++i)
+			{
+				if (str[i] == s)
+				{
+					++num;
+				}
+			}
+			return num;
+		}
 	}
 	
 	static class globvars
@@ -336,32 +464,88 @@ namespace xrffutils
 		}
 	}
 	
+	class comboGenerator2D : comboGenerator
+	{
+		public int i2;
+		public int j2;
+		public override bool SatisfiesConstraints()
+		{
+			if (i1 > j1)
+				return false;
+			if (j1 > i2)
+				return false;
+			if (i2 > j2)
+				return false;
+			if (!l[i1].CompareEnd(l[j1], 2) || !l[i1].CompareEnd(l[j2], 2) || !l[i1].CompareEnd(l[i2], 2))
+				return false;
+			if (!l[i1].CompareEnd("_x") && !l[i1].CompareEnd("_y") && !l[i1].CompareEnd("_z"))
+				return false;
+			return true;
+		}
+		public override string GetNext()
+		{
+			if (++j2 >= l.Length)
+			{
+				if (++i2 >= l.Length)
+				{
+					if (++j1 >= l.Length)
+					{
+						if (++i1 >= l.Length)
+						{
+							return null;
+						}
+						else
+						{
+							j1 = 0;
+						}
+					}
+					else
+					{
+						i2 = 0;
+					}
+				}
+				else
+				{
+					j2 = 0;
+				}
+			}
+			if (SatisfiesConstraints())
+				return "("+l[i1]+","+l[j1]+","+l[i2]+","+l[j2]+")";
+			else
+				return GetNext();
+		}
+	}
+	
 	class comboGenerator
 	{
 		public string[] l;
-		public int i;
-		public int j;
-		public bool SatisfiesConstraints()
+		public int i1;
+		public int j1;
+		public virtual bool SatisfiesConstraints()
 		{
-			if (j > i)
-				return true;
-			return false;
+			if (i1 > j1)
+				return false;
+			if (!l[i1].CompareEnd(l[j1], 2))
+				return false;
+			if (!l[i1].CompareEnd("_x") && !l[i1].CompareEnd("_y") && !l[i1].CompareEnd("_z"))
+				return false;
+			return true;
 		}
-		public string GetNext()
+		public virtual string GetNext()
 		{
-			if (++j >= l.Length)
+			if (++j1 >= l.Length)
 			{
-				if (++i >= l.Length)
+				if (++i1 >= l.Length)
 				{
 					return null;
 				}
 				else
 				{
-					j = 0;
+					j1 = 0;
 				}
 			}
 			if (SatisfiesConstraints())
-				return "("+l[i]+","+l[j]+")";
+				return "("+l[i1]+","+l[j1]+")";
 			else
 				return GetNext();
 		}
@@ -733,7 +917,6 @@ namespace xrffutils
 						{
 							if (featureIdx.Contains(attrname))
 							{
-								Console.WriteLine(attrname);
 								featureIdx.SetMatchAttr(attrname, curidx);
 							}
 						}
@@ -997,6 +1180,31 @@ namespace xrffutils
 			}
 		}
 		
+		public static void combogen2D(string inputFile)
+		{
+			FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+			StreamReader ao = new StreamReader(fs);
+			List<string> features = new List<string>();
+			while (!ao.EndOfStream)
+			{
+				string curf = ao.ReadLine().Trim();
+				if (curf != null && curf != string.Empty && !features.Contains(curf))
+					features.Add(curf);
+			}
+			ao.Close();
+			fs.Close();
+			ao = null;
+			fs = null;
+			comboGenerator2D cbg = new comboGenerator2D();
+			cbg.l = features.ToArray();
+			features = null;
+			string s;
+			while ((s = cbg.GetNext()) != null)
+			{
+				Console.WriteLine(s);
+			}
+		}
+		
 		public static void Main(string[] args)
 		{
 			if (args.Length < 1)
@@ -1097,6 +1305,15 @@ namespace xrffutils
 					return;
 				}
 				combogen(args[1]);
+			}
+			else if (args[0] == "combogen2D")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				combogen2D(args[1]);
 			}
 			else
 			{
