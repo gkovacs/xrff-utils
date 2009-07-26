@@ -145,11 +145,13 @@ namespace xrffutils
 		
 		public static float Distance(this IEnumerable<float> strl)
 		{
+			Console.WriteLine("invoking distance");
 			IEnumerator<float> n = strl.GetEnumerator();
 			float total = 0.0f;
 			float diff = 0.0f;
 			while (n.MoveNext())
 			{
+				Console.WriteLine("moved another");
 				diff = n.Current;
 				n.MoveNext();
 				total += Math.Abs(diff - n.Current).Squared();
@@ -377,7 +379,7 @@ namespace xrffutils
 		// L = L2 norm
 		// W = tWo-dimensional distance
 		// H = tHree-dimensional distance
-		// N = N-dimensional distance
+		// G = General N-dimensional distance
 		public string[] names;
 		public int[] idxs;
 		public float[] values;
@@ -410,9 +412,9 @@ namespace xrffutils
 				op = 'H';
 				ninput = input.Remove(0, 1);
 			}
-			else if (input[0] == 'N')
+			else if (input[0] == 'G')
 			{
-				op = 'N';
+				op = 'G';
 				ninput = input.Remove(0, 1);
 			}
 			else if (input[0] == 'I')
@@ -495,7 +497,7 @@ namespace xrffutils
 					return values.Distance2D().ToString();
 				else if (op == 'H')
 					return values.Distance3D().ToString();
-				else if (op == 'N')
+				else if (op == 'G')
 					return values.Distance().ToString();
 				else
 					return null;
