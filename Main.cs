@@ -290,14 +290,19 @@ namespace xrffutils
 			return System.Convert.ToSingle(str);
 		}
 		
-		public static new string mkstring(this Pair<string, string> str)
+		public static string mkstring(this Pair<string, string> str)
 		{
 			return "("+str.first+","+str.second+")";
 		}
 		
-		public static new string mkstring(this Triple<string, string, string> str)
+		public static string mkstring(this Triple<string, string, string> str)
 		{
 			return "("+str.first+","+str.second+","+str.third+")";
+		}
+		
+		public static string mkstring(this Pair< Triple<string, string, string>, Triple<string, string, string> > str)
+		{
+			return "{ "+str.first.mkstring()+" , "+str.second.mkstring()+" }";
 		}
 		
 		public static T[] GetUnique<T>(this Pair<T, T>[] strl)
@@ -533,9 +538,8 @@ namespace xrffutils
 		}
 	}
 	
-	class TripleGenerator : PairGenerator
+	class TripleStringGenerator : TripleGenerator<string>
 	{
-		public int k;
 		public override bool SatisfiesConstraints()
 		{
 			if (i >= j)
@@ -546,17 +550,22 @@ namespace xrffutils
 				return false;
 			if (!l[i].CompareStartNthIndexFromLast(l[k], '_', 0))
 				return false;
-//			if (!l[i1].CompareEnd(l[j1], 2) || !l[i1].CompareEnd(l[j2], 2) || !l[i1].CompareEnd(l[i2], 2))
-//				return false;
-//			if (!l[i1].CompareMidNthIndexFromLast(l[j1], '_', 0, 1) || 
-//			    !l[i1].CompareMidNthIndexFromLast(l[j2], '_', 0, 1) || 
-//			    !l[i1].CompareMidNthIndexFromLast(l[i2], '_', 0, 1))
-//				return false;
-//			if (!l[i1].CompareEnd("_x") && !l[i1].CompareEnd("_y") && !l[i1].CompareEnd("_z"))
-//				return false;
 			return true;
 		}
-		public new Triple<string, string, string> GetNext()
+	}
+	
+	class TripleGenerator<T> : PairGenerator<T>
+	{
+		public int k;
+		public override bool SatisfiesConstraints()
+		{
+			if (i >= j)
+				return false;
+			if (j >= k)
+				return false;
+			return true;
+		}
+		public new Triple<T, T, T> GetNext()
 		{
 			start:
 			if (++k >= l.Length)
@@ -578,26 +587,24 @@ namespace xrffutils
 				}
 			}
 			if (SatisfiesConstraints())
-				return new Triple<string, string, string>(l[i], l[j], l[k]);
+				return new Triple<T, T, T>(l[i], l[j], l[k]);
 			else
 				goto start;
 		}
 	}
 	
-	class PairGenerator
+	class PairGenerator<T>
 	{
-		public string[] l;
+		public T[] l;
 		public int i;
 		public int j;
 		public virtual bool SatisfiesConstraints()
 		{
 			if (i >= j)
 				return false;
-			if (!l[i].CompareStartNthIndexFromLast(l[j], '_', 0))
-				return false;
 			return true;
 		}
-		public Pair<string, string> GetNext()
+		public Pair<T, T> GetNext()
 		{
 			start:
 			if (++j >= l.Length)
@@ -612,9 +619,21 @@ namespace xrffutils
 				}
 			}
 			if (SatisfiesConstraints())
-				return new Pair<string, string>(l[i], l[j]);
+				return new Pair<T, T>(l[i], l[j]);
 			else
 				goto start;
+		}
+	}
+	
+	class PairStringGenerator : PairGenerator<string>
+	{
+		public override bool SatisfiesConstraints()
+		{
+			if (i >= j)
+				return false;
+			if (!l[i].CompareStartNthIndexFromLast(l[j], '_', 0))
+				return false;
+			return true;
 		}
 	}
 	
@@ -893,6 +912,8 @@ namespace xrffutils
 			fs.Close();
 			if (!features.Contains("class"))
 				features.Add("class");
+			ao.Close();
+			fs.Close();
 			return features.ToArray();
 		}
 		
@@ -1222,50 +1243,59 @@ namespace xrffutils
 			return labelsl.ToArray();
 		}
 		
-		public static void pairgen(string inputFile)
+		public static Pair<string, string>[] pairgen(string inputFile)
 		{
-			FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
-			StreamReader ao = new StreamReader(fs);
-			List<string> features = new List<string>();
-			while (!ao.EndOfStream)
-			{
-				string curf = ao.ReadLine().Trim();
-				if (curf != null && curf != string.Empty && !features.Contains(curf))
-					features.Add(curf);
-			}
-			ao.Close();
-			fs.Close();
-			ao = null;
-			fs = null;
-			PairGenerator cbg = new PairGenerator();
-			cbg.l = features.ToArray();
+			return pairgen(listfeatures(inputFile));
+		}
+		
+		public static Pair<string, string>[] pairgen(string[] features)
+		{
+			List< Pair<string, string> > l = new List< Pair<string, string> >();
+			PairStringGenerator cbg = new PairStringGenerator();
+			cbg.l = features;
 			features = null;
 			Pair<string, string> s = null;
 			while ((s = cbg.GetNext()) != null)
 			{
-				Console.WriteLine(s.mkstring());
+				l.Add(s);
 			}
+			return l.ToArray();
 		}
 		
-		public static void triplegen(string inputFile)
+		public static Triple<string, string, string>[] triplegen(string inputFile)
 		{
-			FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
-			StreamReader ao = new StreamReader(fs);
-			List<string> features = new List<string>();
-			while (!ao.EndOfStream)
-			{
-				string curf = ao.ReadLine().Trim();
-				if (curf != null && curf != string.Empty && !features.Contains(curf))
-					features.Add(curf);
-			}
-			ao.Close();
-			fs.Close();
-			ao = null;
-			fs = null;
-			TripleGenerator cbg = new TripleGenerator();
-			cbg.l = features.ToArray();
+			return triplegen(listfeatures(inputFile));
+		}
+		
+		public static Triple<string, string, string>[] triplegen(string[] features)
+		{
+			List< Triple<string, string, string> > l = new List< Triple<string, string, string> >();
+			TripleStringGenerator cbg = new TripleStringGenerator();
+			cbg.l = features;
 			features = null;
 			Triple<string, string, string> s = null;
+			while ((s = cbg.GetNext()) != null)
+			{
+				l.Add(s);
+			}
+			return l.ToArray();
+		}
+		
+		public static void triplecombogen(string inputFile)
+		{
+			triplecombogen(listfeatures(inputFile));
+		}
+		
+		public static void triplecombogen(string[] features)
+		{
+			triplecombogen(triplegen(features));
+		}
+		
+		public static void triplecombogen(Triple<string, string, string>[] tl)
+		{
+			PairGenerator< Triple<string, string, string> > cbg = new PairGenerator< Triple<string, string, string> >();
+			cbg.l = tl;
+			Pair< Triple<string, string, string>, Triple<string, string, string> > s = null;
 			while ((s = cbg.GetNext()) != null)
 			{
 				Console.WriteLine(s.mkstring());
@@ -1371,7 +1401,11 @@ namespace xrffutils
 					Console.WriteLine("not enough arguments for "+args[0]);
 					return;
 				}
-				pairgen(args[1]);
+				Pair<string, string>[] sl = pairgen(args[1]);
+				foreach (Pair<string, string> x in sl)
+				{
+					Console.WriteLine(x.mkstring());
+				}
 			}
 			else if (args[0] == "triplegen")
 			{
@@ -1380,7 +1414,20 @@ namespace xrffutils
 					Console.WriteLine("not enough arguments for "+args[0]);
 					return;
 				}
-				triplegen(args[1]);
+				Triple<string, string, string>[] sl = triplegen(args[1]);
+				foreach (Triple<string, string, string> x in sl)
+				{
+					Console.WriteLine(x.mkstring());
+				}
+			}
+			else if (args[0] == "triplecombogen")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				triplecombogen(args[1]);
 			}
 			else
 			{
