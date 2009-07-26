@@ -123,6 +123,16 @@ namespace xrffutils
 			return Math.Abs(strl[0] - strl[1]);
 		}
 		
+		public static float Multiply(this IEnumerable<float> strl)
+		{
+			float total = 1.0f;
+			foreach (float x in strl)
+			{
+				total *= x;
+			}
+			return total;
+		}
+		
 		public static void SetValAtIdx(this IEnumerable<opgroup> strl, int idx, string val)
 		{
 			if (idx == 0)
@@ -191,7 +201,7 @@ namespace xrffutils
 			return ul.ToArray();
 		}
 		
-		public static T GetActualValue<T>(this Pair<T, T>[] strl, T val)
+		public static T GetActualValue<T>(this IEnumerable< Pair<T, T> > strl, T val)
 		{
 			foreach (Pair<T, T> x in strl)
 			{
@@ -227,6 +237,12 @@ namespace xrffutils
 	class opgroup
 	{
 		public char op;
+		// I = identity (value)
+		// S = subtract (absolute value)
+		// A = average (mean)
+		// T = total (sum)
+		// M = multiply
+		// D = divide
 		public string[] names;
 		public int[] idxs;
 		public float[] values;
@@ -237,6 +253,11 @@ namespace xrffutils
 			if (input[0] == 'S')
 			{
 				op = 'S';
+				ninput = input.Remove(0, 1);
+			}
+			else if (input[0] == 'A')
+			{
+				op = 'A';
 				ninput = input.Remove(0, 1);
 			}
 			else if (input[0] == 'I')
@@ -294,7 +315,7 @@ namespace xrffutils
 		public override string ToString()
 		{
 			if (op == 'I')
-				return names.Join('N');
+				return names[0];
 			else
 				return op+names.Join('N');
 		}
@@ -309,8 +330,12 @@ namespace xrffutils
 			{
 				if (op == 'I')
 					return values[0].ToString();
-				else
+				else if (op == 'S')
 					return values.AbsSubtract().ToString();
+				else if (op == 'A')
+					return values.Average().ToString();
+				else
+					return null;
 			}
 		}
 		
