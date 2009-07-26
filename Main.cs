@@ -135,17 +135,17 @@ namespace xrffutils
 		
 		public static double L2Norm(this IEnumerable<double> strl)
 		{
-			return Math.Sqrt(SumSquares(strl));
+			return Math.Sqrt(strl.SumSquares());
 		}
 		
 		public static float L2Norm(this IEnumerable<float> strl)
 		{
-			return (float)Math.Sqrt(SumSquares(strl));
+			return (float)Math.Sqrt(strl.SumSquares());
 		}
 		
 		public static float Average(this float[] strl)
 		{
-			return Sum(strl) / strl.Length;
+			return strl.Sum() / strl.Length;
 		}
 		
 		public static float AbsSubtract(this float[] strl)
@@ -261,6 +261,37 @@ namespace xrffutils
 		{
 			first = f;
 			second = s;
+		}
+	}
+	
+	class comboGenerator
+	{
+		public string[] l;
+		public int i;
+		public int j;
+		public bool SatisfiesConstraints()
+		{
+			if (j > i)
+				return true;
+			return false;
+		}
+		public string GetNext()
+		{
+			if (++j >= l.Length)
+			{
+				if (++i >= l.Length)
+				{
+					return null;
+				}
+				else
+				{
+					j = 0;
+				}
+			}
+			if (SatisfiesConstraints())
+				return "("+l[i]+","+l[j]+")";
+			else
+				return GetNext();
 		}
 	}
 	
@@ -845,6 +876,31 @@ namespace xrffutils
 			return labelsl.ToArray();
 		}
 		
+		public static void combogen(string inputFile)
+		{
+			FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+			StreamReader ao = new StreamReader(fs);
+			List<string> features = new List<string>();
+			while (!ao.EndOfStream)
+			{
+				string curf = ao.ReadLine().Trim();
+				if (curf != null && curf != string.Empty && !features.Contains(curf))
+					features.Add(curf);
+			}
+			ao.Close();
+			fs.Close();
+			ao = null;
+			fs = null;
+			comboGenerator cbg = new comboGenerator();
+			cbg.l = features.ToArray();
+			features = null;
+			string s;
+			while ((s = cbg.GetNext()) != null)
+			{
+				Console.WriteLine(s);
+			}
+		}
+		
 		public static void Main(string[] args)
 		{
 			if (args.Length < 1)
@@ -936,6 +992,15 @@ namespace xrffutils
 				{
 					Console.WriteLine(x);
 				}
+			}
+			else if (args[0] == "combogen")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				combogen(args[1]);
 			}
 			else
 			{
