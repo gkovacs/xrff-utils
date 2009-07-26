@@ -128,19 +128,69 @@ namespace xrffutils
 			double total = 0.0;
 			foreach (double x in strl)
 			{
-				total += (x*x);
+				total += x.Squared();
 			}
 			return total;
 		}
 		
 		public static double L2Norm(this IEnumerable<double> strl)
 		{
-			return Math.Sqrt(strl.SumSquares());
+			return strl.SumSquares().SquareRoot();
 		}
 		
 		public static float L2Norm(this IEnumerable<float> strl)
 		{
-			return (float)Math.Sqrt(strl.SumSquares());
+			return strl.SumSquares().SquareRoot();
+		}
+		
+		public static float Distance(this IEnumerable<float> strl)
+		{
+			IEnumerator<float> n = strl.GetEnumerator();
+			float total = 0.0f;
+			float diff = 0.0f;
+			while (n.MoveNext())
+			{
+				diff = n.Current;
+				n.MoveNext();
+				total += Math.Abs(diff - n.Current).Squared();
+			}
+			return total.SquareRoot();
+		}
+		
+		public static float Distance2D(this IEnumerable<float> strl)
+		{
+			IEnumerator<float> n = strl.GetEnumerator();
+			float total = 0.0f;
+			float diff = 0.0f;
+			n.MoveNext();
+			diff = n.Current;
+			n.MoveNext();
+			total += Math.Abs(diff - n.Current).Squared();
+			n.MoveNext();
+			diff = n.Current;
+			n.MoveNext();
+			total += Math.Abs(diff - n.Current).Squared();
+			return total.SquareRoot();
+		}
+		
+		public static float Distance3D(this IEnumerable<float> strl)
+		{
+			IEnumerator<float> n = strl.GetEnumerator();
+			float total = 0.0f;
+			float diff = 0.0f;
+			n.MoveNext();
+			diff = n.Current;
+			n.MoveNext();
+			total += Math.Abs(diff - n.Current).Squared();
+			n.MoveNext();
+			diff = n.Current;
+			n.MoveNext();
+			total += Math.Abs(diff - n.Current).Squared();
+			n.MoveNext();
+			diff = n.Current;
+			n.MoveNext();
+			total += Math.Abs(diff - n.Current).Squared();
+			return total.SquareRoot();
 		}
 		
 		public static float Average(this float[] strl)
@@ -161,6 +211,26 @@ namespace xrffutils
 				total *= x;
 			}
 			return total;
+		}
+		
+		public static double Squared(this double s)
+		{
+			return s*s;
+		}
+		
+		public static float Squared(this float s)
+		{
+			return s*s;
+		}
+		
+		public static double SquareRoot(this double s)
+		{
+			return Math.Sqrt(s);
+		}
+		
+		public static float SquareRoot(this float s)
+		{
+			return (float)Math.Sqrt(s);
 		}
 		
 		public static void SetValAtIdx(this IEnumerable<opgroup> strl, int idx, string val)
@@ -305,6 +375,9 @@ namespace xrffutils
 		// M = multiply
 		// D = divide
 		// L = L2 norm
+		// W = tWo-dimensional distance
+		// H = tHree-dimensional distance
+		// N = N-dimensional distance
 		public string[] names;
 		public int[] idxs;
 		public float[] values;
@@ -325,6 +398,21 @@ namespace xrffutils
 			else if (input[0] == 'L')
 			{
 				op = 'L';
+				ninput = input.Remove(0, 1);
+			}
+			else if (input[0] == 'W')
+			{
+				op = 'W';
+				ninput = input.Remove(0, 1);
+			}
+			else if (input[0] == 'H')
+			{
+				op = 'H';
+				ninput = input.Remove(0, 1);
+			}
+			else if (input[0] == 'N')
+			{
+				op = 'N';
 				ninput = input.Remove(0, 1);
 			}
 			else if (input[0] == 'I')
@@ -403,6 +491,12 @@ namespace xrffutils
 					return values.Average().ToString();
 				else if (op == 'L')
 					return values.L2Norm().ToString();
+				else if (op == 'W')
+					return values.Distance2D().ToString();
+				else if (op == 'H')
+					return values.Distance3D().ToString();
+				else if (op == 'N')
+					return values.Distance().ToString();
 				else
 					return null;
 			}
