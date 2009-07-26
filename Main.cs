@@ -302,7 +302,27 @@ namespace xrffutils
 		
 		public static string mkstring(this Pair< Triple<string, string, string>, Triple<string, string, string> > str)
 		{
-			return "{ "+str.first.mkstring()+" , "+str.second.mkstring()+" }";
+			return "{"+str.first.mkstring()+","+str.second.mkstring()+"}";
+		}
+		
+		public static string mkstring(this Pair< Pair<string, string>, Pair<string, string> > str)
+		{
+			return "{"+str.first.mkstring()+","+str.second.mkstring()+"}";
+		}
+		
+		public static string mkopequation(this Pair<string, string> str)
+		{
+			return "S"+str.first+"N"+str.second;
+		}
+		
+		public static string mkopequation(this Pair< Pair<string, string>, Pair<string, string> > str)
+		{
+			return "W"+str.first.first+"N"+str.second.first+"N"+str.first.second+"N"+str.second.second;
+		}
+		
+		public static string mkopequation(this Pair< Triple<string, string, string>, Triple<string, string, string> > str)
+		{
+			return "H"+str.first.first+"N"+str.second.first+"N"+str.first.second+"N"+str.second.second+"N"+str.first.third+"N"+str.second.third;
 		}
 		
 		public static T[] GetUnique<T>(this Pair<T, T>[] strl)
@@ -567,29 +587,29 @@ namespace xrffutils
 		}
 		public new Triple<T, T, T> GetNext()
 		{
-			start:
-			if (++k >= l.Length)
+			do
 			{
-				if (++j >= l.Length)
+				if (++k >= l.Length)
 				{
-					if (++i >= l.Length)
+					if (++j >= l.Length)
 					{
-						return null;
+						if (++i >= l.Length)
+						{
+							return null;
+						}
+						else
+						{
+							j = 0;
+						}
 					}
 					else
 					{
-						j = 0;
+						k = 0;
 					}
 				}
-				else
-				{
-					k = 0;
-				}
 			}
-			if (SatisfiesConstraints())
-				return new Triple<T, T, T>(l[i], l[j], l[k]);
-			else
-				goto start;
+			while (!SatisfiesConstraints());
+			return new Triple<T, T, T>(l[i], l[j], l[k]);
 		}
 	}
 	
@@ -606,22 +626,22 @@ namespace xrffutils
 		}
 		public Pair<T, T> GetNext()
 		{
-			start:
-			if (++j >= l.Length)
+			do
 			{
-				if (++i >= l.Length)
+				if (++j >= l.Length)
 				{
-					return null;
-				}
-				else
-				{
-					j = 0;
+					if (++i >= l.Length)
+					{
+						return null;
+					}
+					else
+					{
+						j = 0;
+					}
 				}
 			}
-			if (SatisfiesConstraints())
-				return new Pair<T, T>(l[i], l[j]);
-			else
-				goto start;
+			while (!SatisfiesConstraints());
+			return new Pair<T, T>(l[i], l[j]);
 		}
 	}
 	
@@ -632,6 +652,24 @@ namespace xrffutils
 			if (i >= j)
 				return false;
 			if (!l[i].CompareStartNthIndexFromLast(l[j], '_', 0))
+				return false;
+			return true;
+		}
+	}
+	
+	class PairCoordinateGenerator : PairGenerator<string>
+	{
+		public override bool SatisfiesConstraints()
+		{
+			if (i >= j)
+				return false;
+			if (l[i].Length < 2 || l[j].Length < 2)
+				return false;
+			if (l[i][l[i].Length-2] != '_' || l[i][l[i].Length-2] != '_')
+				return false;
+			if (l[i][l[i].Length-1] != 'x' && l[i][l[i].Length-1] != 'y' && l[i][l[i].Length-1] != 'z')
+				return false;
+			if (l[i][l[i].Length-1] != l[j][l[j].Length-1])
 				return false;
 			return true;
 		}
@@ -1281,6 +1319,43 @@ namespace xrffutils
 			return l.ToArray();
 		}
 		
+		public static void combogen(string inputFile)
+		{
+			combogen(listfeatures(inputFile));
+		}
+		
+		public static void combogen(string[] features)
+		{
+			PairCoordinateGenerator cbg = new PairCoordinateGenerator();
+			cbg.l = features;
+			Pair<string, string> s = null;
+			while ((s = cbg.GetNext()) != null)
+			{
+				Console.WriteLine(s.mkopequation());
+			}
+		}
+		
+		public static void paircombogen(string inputFile)
+		{
+			paircombogen(listfeatures(inputFile));
+		}
+		
+		public static void paircombogen(string[] features)
+		{
+			paircombogen(pairgen(features));
+		}
+		
+		public static void paircombogen(Pair<string, string>[] tl)
+		{
+			PairGenerator< Pair<string, string> > cbg = new PairGenerator< Pair<string, string> >();
+			cbg.l = tl;
+			Pair< Pair<string, string>, Pair<string, string> > s = null;
+			while ((s = cbg.GetNext()) != null)
+			{
+				Console.WriteLine(s.mkopequation());
+			}
+		}
+		
 		public static void triplecombogen(string inputFile)
 		{
 			triplecombogen(listfeatures(inputFile));
@@ -1298,7 +1373,7 @@ namespace xrffutils
 			Pair< Triple<string, string, string>, Triple<string, string, string> > s = null;
 			while ((s = cbg.GetNext()) != null)
 			{
-				Console.WriteLine(s.mkstring());
+				Console.WriteLine(s.mkopequation());
 			}
 		}
 		
@@ -1419,6 +1494,24 @@ namespace xrffutils
 				{
 					Console.WriteLine(x.mkstring());
 				}
+			}
+			else if (args[0] == "combogen")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				combogen(args[1]);
+			}
+			else if (args[0] == "paircombogen")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				paircombogen(args[1]);
 			}
 			else if (args[0] == "triplecombogen")
 			{
