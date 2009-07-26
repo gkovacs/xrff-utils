@@ -113,6 +113,36 @@ namespace xrffutils
 			return total;
 		}
 		
+		public static float SumSquares(this IEnumerable<float> strl)
+		{
+			float total = 0.0f;
+			foreach (float x in strl)
+			{
+				total += (x*x);
+			}
+			return total;
+		}
+		
+		public static double SumSquares(this IEnumerable<double> strl)
+		{
+			double total = 0.0;
+			foreach (double x in strl)
+			{
+				total += (x*x);
+			}
+			return total;
+		}
+		
+		public static double L2Norm(this IEnumerable<double> strl)
+		{
+			return Math.Sqrt(SumSquares(strl));
+		}
+		
+		public static float L2Norm(this IEnumerable<float> strl)
+		{
+			return (float)Math.Sqrt(SumSquares(strl));
+		}
+		
 		public static float Average(this float[] strl)
 		{
 			return Sum(strl) / strl.Length;
@@ -243,6 +273,7 @@ namespace xrffutils
 		// T = total (sum)
 		// M = multiply
 		// D = divide
+		// L = L2 norm
 		public string[] names;
 		public int[] idxs;
 		public float[] values;
@@ -258,6 +289,11 @@ namespace xrffutils
 			else if (input[0] == 'A')
 			{
 				op = 'A';
+				ninput = input.Remove(0, 1);
+			}
+			else if (input[0] == 'L')
+			{
+				op = 'L';
 				ninput = input.Remove(0, 1);
 			}
 			else if (input[0] == 'I')
@@ -334,6 +370,8 @@ namespace xrffutils
 					return values.AbsSubtract().ToString();
 				else if (op == 'A')
 					return values.Average().ToString();
+				else if (op == 'L')
+					return values.L2Norm().ToString();
 				else
 					return null;
 			}
