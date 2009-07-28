@@ -287,7 +287,7 @@ namespace xrffutils
 			string cmap = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
 			for (int i = 0; i < arr.Length; ++i)
 			{
-				if (arr[i] == 0 || arr[i] >= arr.Length)
+				if ((int)arr[i] == 0 || (int)arr[i] >= cmap.Length)
 					break;
 				outmsg += cmap[(int)arr[i]];
 			}
