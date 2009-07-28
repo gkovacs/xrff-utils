@@ -1607,6 +1607,115 @@ namespace xrffutils
 			fso.Close();
 		}
 		
+		public static void mergefiles(string outputFile, string[] inpfiles)
+		{
+			FileStream fso = new FileStream(outputFile, FileMode.Create, FileAccess.Write);
+			StreamWriter tfso = new StreamWriter(fso);
+			FileStream fs = new FileStream(inpfiles[0], FileMode.Open, FileAccess.Read);
+			XmlTextReader xi = new XmlTextReader(fs);
+			XmlTextWriter xo = new XmlTextWriter(tfso);
+			xo.Indentation = 1;
+			xo.IndentChar = '\t';
+			xo.Formatting = Formatting.Indented;
+			WriteHeader(xi, xo);
+			foreach (string x in inpfiles)
+			{
+				xi.Close();
+				fs.Close();
+				fs = new FileStream(x, FileMode.Open, FileAccess.Read);
+				xi = new XmlTextReader(fs);
+				WriteValues(xi, xo);
+			}
+			xo.Close();
+			tfso.Close();
+			fso.Close();
+			xi.Close();
+			fs.Close();
+		}
+		
+		public static void WriteValues(XmlTextReader xi, XmlTextWriter xo)
+		{
+			while (xi.Read())
+			{
+				if (xi.NodeType == XmlNodeType.Element && xi.IsStartElement())
+				{
+					if (xi.Name == "instances")
+					{
+						break;
+					}
+				}
+			}
+			while (xi.Read())
+			{
+				
+				if (xi.Name == "instances" && xi.NodeType == XmlNodeType.EndElement)
+				{
+					break;
+				}
+				else if (xi.Name == "instance")
+				{
+					xo.WriteNode(xi, true);
+				}
+			}
+			
+		}
+		
+		public static void WriteHeader(XmlTextReader xi, XmlTextWriter xo)
+		{
+			while (xi.Read())
+			{
+				if (xi.NodeType == XmlNodeType.Element && xi.IsStartElement())
+				{
+					if (xi.Name == "dataset")
+					{
+						xo.WriteStartElement(xi.Name); // dataset
+						xo.WriteAttributes(xi, true);
+						break;
+					}
+				}
+				else
+				{
+					xo.WriteNode(xi, true);
+				}
+			}
+			while (xi.Read())
+			{
+				if (xi.IsStartElement())
+				{
+					if (xi.Name == "header")
+					{
+						xo.WriteStartElement(xi.Name);
+						xo.WriteAttributes(xi, true);
+						break;
+					}
+				}
+			}
+			while (xi.Read())
+			{
+				if (xi.IsStartElement())
+				{
+					if (xi.Name == "attributes")
+					{
+						xo.WriteNode(xi, true);
+						xo.WriteEndElement(); // header
+						break;
+					}
+				}
+			}
+			while (xi.Read())
+			{
+				if (xi.IsStartElement())
+				{
+					xo.WriteStartElement(xi.Name);
+					xo.WriteAttributes(xi, true);
+					if (xi.Name == "instances")
+					{
+						break;
+					}
+				}
+			}
+		}
+		
 		public static void Main(string[] args)
 		{
 			if (args.Length < 1)
@@ -1807,6 +1916,18 @@ namespace xrffutils
 				{
 					WriteXrffGenFile(args[2]+i+".txt", dpools[i]);
 				}
+			}
+			else if (args[0] == "merge")
+			{
+				if (args.Length < 3)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				string[] inpfiles = new string[args.Length-2];
+				for (int i = 2; i < args.Length; ++i)
+					inpfiles[i-2] = args[i];
+				mergefiles(args[1], inpfiles);
 			}
 			else
 			{
