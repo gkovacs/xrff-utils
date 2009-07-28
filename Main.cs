@@ -55,6 +55,16 @@ namespace xrffutils
 			return false;
 		}
 		
+		public static bool ContainsInFirst<T, U>(this IEnumerable< Pair<T, U> > strl, T item)
+		{
+			foreach (Pair<T, U> x in strl)
+			{
+				if (x.first.Equals(item))
+					return true;
+			}
+			return false;
+		}
+		
 		public static bool Contains(this IEnumerable<opgroup> strl, string item)
 		{
 			foreach (opgroup x in strl)
@@ -71,6 +81,18 @@ namespace xrffutils
 			foreach (T x in strl)
 			{
 				if (x.Equals(item))
+					return i;
+				++i;
+			}
+			return -1;
+		}
+		
+		public static int IndexOfInFirst<T, U>(this IEnumerable< Pair<T, U> > strl, T item)
+		{
+			int i = 0;
+			foreach (Pair<T, U> x in strl)
+			{
+				if (x.first.Equals(item))
 					return i;
 				++i;
 			}
@@ -288,6 +310,22 @@ namespace xrffutils
 		public static float ToFloat(this string str)
 		{
 			return System.Convert.ToSingle(str);
+		}
+		
+		public static int ToInt(this string str)
+		{
+			return System.Convert.ToInt32(str);
+		}
+		
+		public static Pair<T, U[]>[] PairListToArray<T, U>(this List< Pair < T, List<U> > > l)
+		{
+			Pair<T, U[]>[] a = new Pair<T, U[]>[l.Count];
+			for (int i = 0; i < a.Length; ++i)
+			{
+				a[i].first = l[i].first;
+				a[i].second = l[i].second.ToArray();
+			}
+			return a;
 		}
 		
 		public static string mkstring(this Pair<string, string> str)
@@ -518,6 +556,37 @@ namespace xrffutils
 				}
 			}
 			return num;
+		}
+		
+		public static string[] Filter(this IEnumerable<string> l, string s)
+		{
+			List<string> n = new List<string>();
+			foreach (string x in l)
+			{
+				if (x.Contains(s))
+					n.Add(x);
+			}
+			return n.ToArray();
+		}
+		
+		public static T GetLastElem<T>(this T[] l)
+		{
+			return l[l.Length-1];
+		}
+		
+		public static string GetParentDir(this string x)
+		{
+			return Directory.GetParent(x).ToString();
+		}
+		
+		public static string GetClassFromPath(this string fpath)
+		{
+			return fpath.GetParentDir().Split('_').GetLastElem();
+		}
+		
+		public static string GetSubClassFromPath(this string fpath)
+		{
+			return fpath.Split('-')[0].Split('V').GetLastElem();
 		}
 	}
 	
@@ -1377,6 +1446,167 @@ namespace xrffutils
 			}
 		}
 		
+		public static string[] allsubfiles(string dirpath)
+		{
+			List<string> allfiles = new List<string>();
+			allfiles.AddRange(Directory.GetFiles(dirpath));
+			string[] allsubdirs = Directory.GetDirectories(dirpath);
+			foreach (string x in allsubdirs)
+			{
+				allfiles.AddRange(allsubfiles(x));
+			}
+			return allfiles.ToArray();
+		}
+		
+		public static string[] readfilelines(string filepath)
+		{
+			List<string> lines = new List<string>();
+			FileStream fs = new FileStream(filepath, FileMode.Open, FileAccess.Read);
+			StreamReader ao = new StreamReader(fs);
+			while (!ao.EndOfStream)
+			{
+				lines.Add(ao.ReadLine());
+			}
+			ao.Close();
+			fs.Close();
+			return lines.ToArray();
+		}
+		
+		public static Pair < string, List<string> >[] listclasstypes(string dirpath)
+		{
+			return listclasstypes(listdataclass(dirpath));
+		}
+		
+		public static Pair<string, List<string>>[] listclasstypes(Pair<string, string>[] pairinfo)
+		{
+			List< Pair < string, List<string> > > classtypes = new List< Pair < string, List<string> > >();
+			foreach (Pair<string, string> x in pairinfo)
+			{
+				int idxn = classtypes.IndexOfInFirst(x.first);
+				if (idxn < 0)
+				{
+					Pair < string, List<string> > p = new Pair<string, List<string>>();
+					p.first = x.first;
+					p.second = new List<string>();
+					p.second.Add(x.second);
+					classtypes.Add(p);
+				}
+				else
+				{
+					classtypes[idxn].second.Add(x.second);
+				}
+			}
+			return classtypes.ToArray();
+		}
+		
+		public static Pair < string, List<string> >[] listsubclasstypes(string dirpath)
+		{
+			return listclasstypes(listdatasubclass(dirpath));
+		}
+		
+		public static string FindQualFile(string qualfile)
+		{
+			string rqf;
+			if (!qualfile.EndsWith("qual.qua") || !File.Exists(qualfile))
+			{
+				rqf = qualfile.GetParentDir()+Path.DirectorySeparatorChar+"qual.qua";
+				if (!File.Exists(rqf))
+				{
+					rqf = allsubfiles(qualfile).Filter("qual.qua")[0];
+				}
+			}
+			else
+				rqf = qualfile;
+			return rqf;
+		}
+		
+		public static int GetQual(string qualfile)
+		{
+			string[] lines = readfilelines(FindQualFile(qualfile));
+			if (lines.Length < 1)
+				return 0;
+			return lines[0].ToInt();
+		}
+		
+		public static Pair<string, string>[] listdatasubclass(string dirpath)
+		{
+			List< Pair<string, string> > pairinfo = new List< Pair<string, string> >();
+			string[] allqualfiles = allsubfiles(dirpath).Filter("qual.qua");
+			foreach (string x in allqualfiles)
+			{
+				if (GetQual(x) < 5)
+				{
+					continue;
+				}
+				Pair<string, string> p = new Pair<string, string>();
+				p.second = x.GetParentDir().GetParentDir();
+				p.first = p.second.GetSubClassFromPath();
+				pairinfo.Add(p);
+			}
+			return pairinfo.ToArray();
+		}
+		
+		public static Pair<string, string>[] listdataclass(string dirpath)
+		{
+			List< Pair<string, string> > pairinfo = new List< Pair<string, string> >();
+			string[] allqualfiles = allsubfiles(dirpath).Filter("qual.qua");
+			foreach (string x in allqualfiles)
+			{
+				if (GetQual(x) < 5)
+				{
+					continue;
+				}
+				Pair<string, string> p = new Pair<string, string>();
+				p.second = x.GetParentDir().GetParentDir();
+				p.first = p.second.GetClassFromPath();
+				pairinfo.Add(p);
+			}
+			return pairinfo.ToArray();
+		}
+		
+		public static List<string>[] splitdata(string datadir, int numpools)
+		{
+			return splitdata(listclasstypes(datadir), numpools);
+		}
+		
+		public static List<string>[] splitdata(Pair < string, List<string> >[] s, int numpools)
+		{
+			List<string>[] dpools = new List<string>[numpools];
+			for (int i = 0; i < dpools.Length; ++i)
+			{
+				dpools[i] = new List<string>();
+			}
+			int poolnum = 0;
+			foreach (Pair < string, List<string> > x in s)
+			{
+//				poolnum = 0;
+				foreach (string c in x.second)
+				{
+					dpools[poolnum].Add(c);
+					poolnum = (++poolnum) % (dpools.Length);
+				}
+			}
+			return dpools;
+		}
+		
+		public static void WriteXrffGenFile(string fileloc, IEnumerable<string> curdpool)
+		{
+			FileStream fso = new FileStream(fileloc, FileMode.Create, FileAccess.Write);
+			StreamWriter ao = new StreamWriter(fso);
+			foreach (string x in curdpool)
+			{
+				int qualnum = GetQual(x);
+				string classtype = x.GetClassFromPath();
+				string[] fdtfiles = allsubfiles(x).Filter(".fdt");
+				foreach (string y in fdtfiles)
+				{
+					ao.WriteLine(y+","+classtype+","+qualnum);
+				}
+			}
+			ao.Close();
+			fso.Close();
+		}
+		
 		public static void Main(string[] args)
 		{
 			if (args.Length < 1)
@@ -1521,6 +1751,62 @@ namespace xrffutils
 					return;
 				}
 				triplecombogen(args[1]);
+			}
+			else if (args[0] == "listclasstypes")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				Pair < string, List<string> >[] s = listclasstypes(args[1]);
+				foreach (Pair < string, List<string> > x in s)
+				{
+					Console.WriteLine(x.first+":"+x.second.Count);
+				}
+			}
+			else if (args[0] == "listsubclasstypes")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				Pair < string, List<string> >[] s = listsubclasstypes(args[1]);
+				foreach (Pair < string, List<string> > x in s)
+				{
+					Console.WriteLine(x.first+":"+x.second.Count);
+				}
+			}
+			else if (args[0] == "splitdata")
+			{
+				if (args.Length < 3)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				List<string>[] dpools = splitdata(args[2], args[1].ToInt());
+				for (int i = 0; i < dpools.Length; ++i)
+				{
+					Console.WriteLine("pool num: "+i);
+					foreach (string x in dpools[i])
+					{
+						Console.WriteLine(x+":"+GetQual(x));
+					}
+				}
+			}
+			else if (args[0] == "mkxrffargs")
+			{
+				if (args.Length < 4)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				List<string>[] dpools = splitdata(args[3], args[1].ToInt());
+				for (int i = 0; i < dpools.Length; ++i)
+				{
+					WriteXrffGenFile(args[2]+i+".txt", dpools[i]);
+				}
 			}
 			else
 			{
