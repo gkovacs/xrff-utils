@@ -37,6 +37,11 @@
   <ItemGroup>
     <Compile Include="Main.cs" />
     <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="extensions.cs" />
+    <Compile Include="Tuples.cs" />
+    <Compile Include="globvars.cs" />
+    <Compile Include="Generators.cs" />
+    <Compile Include="opgroup.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>
