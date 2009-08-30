@@ -269,6 +269,60 @@ namespace xrffutils
 			fs = null;
 		}
 		
+		public static void orderfeatures(Pair<string, float>[] featureweights, string inputFile)
+		{
+			FileStream fs = new FileStream(inputFile, FileMode.Open, FileAccess.Read);
+			XmlTextReader xi = new XmlTextReader(fs);
+			List<Pair<string, float>> ofeatures = new List<Pair<string, float>>();
+			while (xi.Read())
+			{
+				if (xi.IsStartElement())
+				{
+					if (xi.Name == "attribute")
+					{
+						string attrname = xi.GetAttribute("name");
+						if (attrname != null)
+						{
+							if (attrname == "class")
+								continue;
+							int idxinfirst = featureweights.IndexOfInFirst(attrname);
+							if (idxinfirst >= 0)
+							{
+								if (!ofeatures.ContainsInFirst(attrname))
+								{
+									ofeatures.Add(new Pair<string, float>(attrname, featureweights[idxinfirst].second));
+								}
+							}
+						}
+					}
+				}
+				else if (xi.NodeType == XmlNodeType.EndElement)
+				{
+					if (xi.Name == "attributes")
+					{
+						break;
+					}
+				}
+			}
+			foreach (Pair<string, float> x in featureweights)
+			{
+				if (x.first == "class")
+					continue;
+				if (!ofeatures.ContainsInFirst(x.first))
+					ofeatures.Add(x);
+			}
+			ofeatures.Add(new Pair<string, float>("class", 1.0f));
+			for (int i = 0; i < ofeatures.Count; ++i)
+			{
+				featureweights[i] = ofeatures[i];
+			}
+			ofeatures = null;
+			xi.Close();
+			xi = null;
+			fs.Close();
+			fs = null;
+		}
+		
 		public static void SetMatchAttrFile(string inputFile, opgroup[] featureIdx)
 		{
 			int curidx = 0;
