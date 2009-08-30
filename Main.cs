@@ -352,16 +352,16 @@ namespace xrffutils
 		
 		public static void selectfeatures(string featureFile, string labelFile, string inputFile, string outputFile)
 		{
-			selectfeatures(listfeatures(featureFile), listlabels(labelFile), inputFile, outputFile);
+			selectfeatures(listweights(featureFile), listlabels(labelFile), inputFile, outputFile);
 		}
 		
-		public static void selectfeatures(string[] features, Pair<string, string>[] labels, string inputFile, string outputFile)
+		public static void selectfeatures(Pair<string, float>[] featureweights, Pair<string, string>[] labels, string inputFile, string outputFile)
 		{
-			orderfeatures(features, inputFile);
-			opgroup[] featureIdx = new opgroup[features.Length];
-			for (int i = 0; i < features.Length; ++i)
+			orderfeatures(featureweights, inputFile);
+			opgroup[] featureIdx = new opgroup[featureweights.Length];
+			for (int i = 0; i < featureweights.Length; ++i)
 			{
-				featureIdx[i] = new opgroup(features[i]);
+				featureIdx[i] = new opgroup(featureweights[i].first);
 			}
 			globvars.labels = labels;
 			SetMatchAttrFile(inputFile, featureIdx);
@@ -391,9 +391,10 @@ namespace xrffutils
 			}
 			xo.WriteStartElement("header");
 			xo.WriteStartElement("attributes");
-			foreach (opgroup opg in featureIdx)
+			for (int i = 0; i < featureweights.Length; ++i)
 			{
-				string s = opg.ToString();
+				string s = featureweights[i].first;
+				float curweight = featureweights[i].second;
 				xo.WriteStartElement("attribute");
 				if (s == "class")
 				{
@@ -412,6 +413,12 @@ namespace xrffutils
 				{
 					xo.WriteAttributeString("name", s);
 					xo.WriteAttributeString("type", "numeric");
+					xo.WriteStartElement("metadata");
+					xo.WriteStartElement("property");
+					xo.WriteAttributeString("name", "weight");
+					xo.WriteValue(curweight);
+					xo.WriteEndElement(); // property
+					xo.WriteEndElement(); // metadata
 					xo.WriteEndElement(); // attribute
 				}
 			}
