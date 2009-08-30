@@ -1111,6 +1111,15 @@ namespace xrffutils
 				}
 				decrweight(args[1], args[2]);
 			}
+			else if (args[0] == "selectfeatures")
+			{
+				if (args.Length < 5)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				selectfeatures(args[1], args[2], args[3], args[4]);
+			}
 			else if (args[0] == "addfeatures")
 			{
 				if (args.Length < 3)
