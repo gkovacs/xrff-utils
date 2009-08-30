@@ -197,6 +197,42 @@ namespace xrffutils
 			return featuresweights.ToArray();
 		}
 		
+		public static void setweight(string outputfile, string feature, string newval)
+		{
+			setweight(outputfile, feature, newval.ToFloat());
+		}
+		
+		public static void setweight(string outputfile, string feature, float newval)
+		{
+			Pair<string, float>[] featureweights = listweights(outputfile);
+			setweight(featureweights, feature, newval);
+			writeweights(featureweights, outputfile);
+		}
+		
+		public static void setweight(Pair<string, float>[] featureweights, string feature, float newval)
+		{
+			for (int i = 0; i < featureweights.Length; ++i)
+			{
+				if (featureweights[i].first == feature)
+				{
+					featureweights[i].second = newval;
+					break;
+				}
+			}
+		}
+		
+		public static void writeweights(IEnumerable<Pair<string, float>> featureweights, string outputfile)
+		{
+			FileStream fs = new FileStream(outputfile, FileMode.Create, FileAccess.Write);
+			StreamWriter ao = new StreamWriter(fs);
+			foreach (Pair<string, float> x in featureweights)
+			{
+				ao.WriteLine(x.first+":"+x.second.ToString());
+			}
+			ao.Close();
+			fs.Close();
+		}
+		
 		public static Pair<string, string>[] listlabels(string featureFile)
 		{
 			FileStream fs = new FileStream(featureFile, FileMode.Open, FileAccess.Read);
@@ -489,7 +525,7 @@ namespace xrffutils
 			StreamWriter ao = new StreamWriter(fs);
 			for (int i = 2; i < allargs.Length; ++i)
 			{
-				ao.WriteLine(allargs[i]);
+				ao.WriteLine(allargs[i]+":1");
 			}
 			ao.Close();
 			fs.Close();
@@ -497,7 +533,7 @@ namespace xrffutils
 		
 		public static void delfeatures(string featureFile, string[] allargs)
 		{
-			List<string> allfeatures = new List<string>(listfeatures(featureFile));
+			string[] allfeatures = listfeatures(featureFile);
 			FileStream fs = new FileStream(featureFile, FileMode.Create, FileAccess.Write);
 			StreamWriter ao = new StreamWriter(fs);
 			foreach (string x in allfeatures)
@@ -979,6 +1015,28 @@ namespace xrffutils
 				{
 					Console.WriteLine(x);
 				}
+			}
+			else if (args[0] == "listweights")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				Pair<string, float>[] allfeatureweights = listweights(args[1]);
+				foreach (Pair<string, float> x in allfeatureweights)
+				{
+					Console.WriteLine(x.first+":"+x.second);
+				}
+			}
+			else if (args[0] == "setweight")
+			{
+				if (args.Length < 4)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				setweight(args[1], args[2], args[3]);
 			}
 			else if (args[0] == "selectfeatures")
 			{
