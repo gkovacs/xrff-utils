@@ -197,6 +197,45 @@ namespace xrffutils
 			return featuresweights.ToArray();
 		}
 		
+		public static float getweight(string inputfile, string feature)
+		{
+			return getweight(listweights(inputfile), feature);
+		}
+		
+		public static float getweight(IEnumerable<Pair<string, float>> featureweights, string feature)
+		{
+			foreach (Pair<string, float> x in featureweights)
+			{
+				if (x.first == feature)
+					return x.second;
+			}
+			return float.NaN;
+		}
+		
+		public static void incrweight(string outputfile, string feature)
+		{
+			Pair<string, float>[] featureweights = listweights(outputfile);
+			incrweight(featureweights, feature);
+			writeweights(featureweights, outputfile);
+		}
+		
+		public static void decrweight(Pair<string, float>[] featureweights, string feature)
+		{
+			setweight(featureweights, feature, getweight(featureweights, feature) - 0.1f);
+		}
+		
+		public static void decrweight(string outputfile, string feature)
+		{
+			Pair<string, float>[] featureweights = listweights(outputfile);
+			decrweight(featureweights, feature);
+			writeweights(featureweights, outputfile);
+		}
+		
+		public static void incrweight(Pair<string, float>[] featureweights, string feature)
+		{
+			setweight(featureweights, feature, getweight(featureweights, feature) + 0.1f);
+		}
+		
 		public static void setweight(string outputfile, string feature, string newval)
 		{
 			setweight(outputfile, feature, newval.ToFloat());
@@ -1038,14 +1077,32 @@ namespace xrffutils
 				}
 				setweight(args[1], args[2], args[3]);
 			}
-			else if (args[0] == "selectfeatures")
+			else if (args[0] == "getweight")
 			{
-				if (args.Length < 5)
+				if (args.Length < 3)
 				{
 					Console.WriteLine("not enough arguments for "+args[0]);
 					return;
 				}
-				selectfeatures(args[1], args[2], args[3], args[4]);
+				Console.WriteLine(getweight(args[1], args[2]));
+			}
+			else if (args[0] == "incrweight")
+			{
+				if (args.Length < 3)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				incrweight(args[1], args[2]);
+			}
+			else if (args[0] == "decrweight")
+			{
+				if (args.Length < 3)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
+				decrweight(args[1], args[2]);
 			}
 			else if (args[0] == "addfeatures")
 			{
