@@ -219,9 +219,21 @@ namespace xrffutils
 			writeweights(featureweights, outputfile);
 		}
 		
+		public static void incrweight(Pair<string, float>[] featureweights, string feature)
+		{
+			float curweight = getweight(featureweights, feature);
+			curweight += 0.1f;
+			setweight(featureweights, feature, curweight);
+		}
+		
 		public static void decrweight(Pair<string, float>[] featureweights, string feature)
 		{
-			setweight(featureweights, feature, getweight(featureweights, feature) - 0.1f);
+			float curweight = getweight(featureweights, feature);
+			if (curweight <= 0)
+				return;
+			else
+				curweight -= 0.1f;
+			setweight(featureweights, feature, curweight);
 		}
 		
 		public static void decrweight(string outputfile, string feature)
@@ -229,11 +241,6 @@ namespace xrffutils
 			Pair<string, float>[] featureweights = listweights(outputfile);
 			decrweight(featureweights, feature);
 			writeweights(featureweights, outputfile);
-		}
-		
-		public static void incrweight(Pair<string, float>[] featureweights, string feature)
-		{
-			setweight(featureweights, feature, getweight(featureweights, feature) + 0.1f);
 		}
 		
 		public static void setweight(string outputfile, string feature, string newval)
