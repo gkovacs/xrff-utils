@@ -1056,6 +1056,19 @@ namespace xrffutils
 					Console.WriteLine("not enough arguments for "+args[0]);
 					return;
 				}
+				string[] allfeatures = listfeatures(args[1]);
+				foreach (string x in allfeatures)
+				{
+					Console.WriteLine(x);
+				}
+			}
+			else if (args[0] == "listfeaturesxrff")
+			{
+				if (args.Length < 2)
+				{
+					Console.WriteLine("not enough arguments for "+args[0]);
+					return;
+				}
 				string[] allfeatures = listfeaturesXrff(args[1]);
 				foreach (string x in allfeatures)
 				{
