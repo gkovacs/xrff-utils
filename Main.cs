@@ -141,7 +141,14 @@ namespace xrffutils
 			while (!ao.EndOfStream)
 			{
 				string curf = ao.ReadLine().Trim();
-				if (curf != null && curf != string.Empty && !features.Contains(curf))
+				if (curf == null)
+					continue;
+				string[] curfl = curf.Split(':');
+				if (curfl.Length >= 1)
+					curf = curfl[0];
+				if (curf == string.Empty)
+					continue;
+				if (!features.Contains(curf))
 					features.Add(curf);
 			}
 			ao.Close();
@@ -151,6 +158,43 @@ namespace xrffutils
 			ao.Close();
 			fs.Close();
 			return features.ToArray();
+		}
+		
+		public static Pair<string, float>[] listweights(string featureFile)
+		{
+			FileStream fs = new FileStream(featureFile, FileMode.Open, FileAccess.Read);
+			StreamReader ao = new StreamReader(fs);
+			List<Pair<string, float>> featuresweights = new List<Pair<string, float>>();
+			while (!ao.EndOfStream)
+			{
+				string curf = ao.ReadLine().Trim();
+				if (curf == null)
+					continue;
+				string[] curfl = curf.Split(':');
+				if (curfl.Length >= 1)
+					curf = curfl[0];
+				if (curf == string.Empty)
+					continue;
+				float curweight = 1.0f;
+				if (curfl.Length >= 2)
+				{
+					bool success;
+					float testfloatconv = curfl[1].ToFloat(out success);
+					if (success)
+						curweight = testfloatconv;
+				}
+				if (!featuresweights.ContainsInFirst(curf))
+				{
+					featuresweights.Add(new Pair<string, float>(curf, curweight));
+				}
+			}
+			ao.Close();
+			fs.Close();
+			if (!featuresweights.ContainsInFirst("class"))
+				featuresweights.Add(new Pair<string, float>("class", 1.0f));
+			ao.Close();
+			fs.Close();
+			return featuresweights.ToArray();
 		}
 		
 		public static Pair<string, string>[] listlabels(string featureFile)
@@ -308,13 +352,14 @@ namespace xrffutils
 						xo.WriteElementString("label", x);
 					}
 					xo.WriteEndElement(); // labels
+					xo.WriteEndElement(); // attribute
 				}
 				else
 				{
 					xo.WriteAttributeString("name", s);
 					xo.WriteAttributeString("type", "numeric");
+					xo.WriteEndElement(); // attribute
 				}
-				xo.WriteEndElement(); // attribute
 			}
 
 			while (xi.Read())

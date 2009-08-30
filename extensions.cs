@@ -309,6 +309,32 @@ namespace xrffutils
 			return System.Convert.ToSingle(str);
 		}
 		
+		public static float ToFloat(this string str, out bool success)
+		{
+			try
+			{
+				success = true;
+				if (str == null || str == string.Empty)
+				{
+					success = false;
+					return 0.0f;
+				}
+				float outval;
+				if (!float.TryParse(str, out outval))
+				{
+					success = false;
+					return 0.0f;
+				}
+				return outval;
+			}
+			catch (Exception e)
+			{
+				success = false;
+				Console.WriteLine(e);
+				return 0.0f;
+			}
+		}
+		
 		public static int ToInt(this string str)
 		{
 			return System.Convert.ToInt32(str);
