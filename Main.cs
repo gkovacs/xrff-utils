@@ -1059,6 +1059,8 @@ namespace xrffutils
 				string[] allfeatures = listfeatures(args[1]);
 				foreach (string x in allfeatures)
 				{
+					if (x == "class")
+						continue;
 					Console.WriteLine(x);
 				}
 			}
@@ -1085,6 +1087,8 @@ namespace xrffutils
 				Pair<string, float>[] allfeatureweights = listweights(args[1]);
 				foreach (Pair<string, float> x in allfeatureweights)
 				{
+					if (x.first == "class")
+						continue;
 					Console.WriteLine(x.first+":"+x.second);
 				}
 			}
